@@ -5,28 +5,40 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.Editable
 import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
+import androidx.lifecycle.Observer
+import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.recyclerview.widget.LinearLayoutManager
 import com.riyazuddin.smsforwarder.Constants.CHECKED
 import com.riyazuddin.smsforwarder.Constants.CONTAINS
 import com.riyazuddin.smsforwarder.Constants.FORWARD_TO_NUMBER
 import com.riyazuddin.smsforwarder.Constants.RECIPIENT
 import com.riyazuddin.smsforwarder.databinding.ActivityMainBinding
+import dagger.hilt.android.AndroidEntryPoint
 
+
+@AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
 
     private lateinit var permissionContract: ActivityResultLauncher<Array<String>>
 
+    private val viewModel: EntryViewModel by viewModels()
+    private lateinit var entriesAdapter: EntriesAdapter
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        entriesAdapter = EntriesAdapter()
+        setUpRecyclerView()
 
         permissionContract = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()){
             if (it[Manifest.permission.RECEIVE_SMS] == true)
@@ -37,12 +49,6 @@ class MainActivity : AppCompatActivity() {
         requestPermission()
 
         val sharedPreferences = getSharedPreferences(RECIPIENT, MODE_PRIVATE)
-        sharedPreferences.getString(FORWARD_TO_NUMBER, null)?.let {
-            binding.forwardToTIE.text = Editable.Factory().newEditable(it)
-        }
-        sharedPreferences.getString(CONTAINS, null)?.let {
-            binding.containsTIE.text = Editable.Factory().newEditable(it)
-        }
         sharedPreferences.getBoolean(CHECKED, false).let {
             binding.onOffSwitch.isChecked = it
             binding.layout.isVisible = it
@@ -51,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         binding.onOffSwitch.setOnCheckedChangeListener { _, isChecked ->
             if (isChecked) {
                 binding.layout.isVisible = true
+                sharedPreferences.edit().putBoolean(CHECKED, true).apply()
             }else{
                 binding.layout.isVisible = false
                 sharedPreferences.edit().putBoolean(CHECKED, false).apply()
@@ -58,18 +65,33 @@ class MainActivity : AppCompatActivity() {
         }
         binding.btnSave.setOnClickListener {
             if (binding.onOffSwitch.isChecked) {
-                val text = binding.forwardToTIE.text
-                if (text != null && text.length == 10) {
-                    sharedPreferences.edit().apply {
-                        putString(FORWARD_TO_NUMBER, text.toString())
-                        putString(CONTAINS, binding.containsTIE.text.toString())
-                        putBoolean(CHECKED, true)
-                        apply()
-                    }
-                    Toast.makeText(this, getString(R.string.save), Toast.LENGTH_SHORT).show()
-                } else {
-                    Toast.makeText(this, getString(R.string.failed_to_save), Toast.LENGTH_SHORT).show()
-                }
+                val forwardTo = binding.forwardToTIE.text.toString()
+                val contains = binding.containsTIE.text.toString()
+                val entry = Entry(forwardTo = forwardTo, contains = contains)
+                viewModel.insertEntry(entry)
+            }
+        }
+
+        viewModel.loadCurrentUserStatus.observe(this, {
+            logger(it.size.toString())
+            entriesAdapter.differ.submitList(it)
+        })
+    }
+
+    private fun setUpRecyclerView() {
+        binding.entriesRV.apply {
+            adapter = entriesAdapter
+            layoutManager = LinearLayoutManager(this@MainActivity)
+            itemAnimator = null
+            this.addItemDecoration(
+                DividerItemDecoration(
+                    this@MainActivity,
+                    DividerItemDecoration.VERTICAL
+                )
+            )
+
+            entriesAdapter.setOnEntryDelete {
+                viewModel.deleteEntry(it)
             }
         }
     }

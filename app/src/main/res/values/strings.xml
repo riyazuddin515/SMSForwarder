@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">SMS Forwarder</string>
-    <string name="save">save</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
     <string name="contains">Contains</string>
     <string name="forward_to_number">Forward To Number</string>
     <string name="failed_to_save">Failed to save</string>
