@@ -45,7 +45,7 @@ class SMSWorker @AssistedInject constructor(
         return if (matcher.find()) {
             matcher.group(0)
         } else {
-            null
+            message
         }
     }
 }

@@ -6,4 +6,5 @@
     <string name="forward_to_number">Forward To Number</string>
     <string name="failed_to_save">Failed to save</string>
     <string name="permission_note">Note: Need SMS Permission to work properly. Allow permission in setting, if denied when asked.</string>
+    <string name="developer_details">Developed by Riyazuddin</string>
 </resources>

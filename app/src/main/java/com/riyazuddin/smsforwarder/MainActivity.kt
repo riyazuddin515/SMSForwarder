@@ -69,6 +69,8 @@ class MainActivity : AppCompatActivity() {
                 val contains = binding.containsTIE.text.toString()
                 val entry = Entry(forwardTo = forwardTo, contains = contains)
                 viewModel.insertEntry(entry)
+                binding.forwardToTIE.setText("")
+                binding.containsTIE.setText("")
             }
         }
 
